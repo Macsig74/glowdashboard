@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"C:\\\\Users\\\\maxim\\\\Documents\\\\dev\\\\frontend\\\\GlowStudio\\\\app\\\\api\\\\auth\\\\[...nextauth]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\maxim\\\\Documents\\\\dev\\\\frontend\\\\GlowStudio\\\\app\\\\api\\\\staff\\\\[id]\\\\notes\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\maxim\\\\Documents\\\\dev\\\\frontend\\\\GlowStudio\\\\app\\\\api\\\\staff\\\\[id]\\\\rank\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\maxim\\\\Documents\\\\dev\\\\frontend\\\\GlowStudio\\\\app\\\\api\\\\servers\\\\[id]\\\\todos\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\maxim\\\\Documents\\\\dev\\\\frontend\\\\GlowStudio\\\\app\\\\api\\\\bbb\\\\[id]\")"
+    ]
+  }
+}
