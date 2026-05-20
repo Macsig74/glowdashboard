@@ -36,6 +36,8 @@ export default function AdminPage() {
   const [newPassword, setNewPassword] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  const [accessError, setAccessError] = useState("");
+  const [toggling, setToggling] = useState<string | null>(null); // "username:salon"
 
   useEffect(() => {
     if (status === "authenticated" && !session?.user?.isAdmin) {
@@ -91,13 +93,32 @@ export default function AdminPage() {
   }
 
   async function toggleAccess(username: string, salon: string) {
+    const key = `${username}:${salon}`;
+    setToggling(key);
+    setAccessError("");
     const has = hasAccess(username, salon);
-    await fetch("/api/admin/access", {
+    // Optimistic update
+    if (has) {
+      setAccess((prev) => prev.filter((a) => !(a.username === username && a.salon === salon)));
+    } else {
+      setAccess((prev) => [...prev, { username, salon }]);
+    }
+    const res = await fetch("/api/admin/access", {
       method: has ? "DELETE" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, salon }),
     });
-    await fetchAccess();
+    if (!res.ok) {
+      // Rollback on error
+      const data = await res.json().catch(() => ({}));
+      setAccessError(data.error ?? "Erreur lors de la mise à jour de l'accès");
+      if (has) {
+        setAccess((prev) => [...prev, { username, salon }]);
+      } else {
+        setAccess((prev) => prev.filter((a) => !(a.username === username && a.salon === salon)));
+      }
+    }
+    setToggling(null);
   }
 
   if (status === "loading" || !session?.user?.isAdmin) return null;
@@ -214,6 +235,11 @@ export default function AdminPage() {
       {/* Access tab */}
       {tab === "access" && (
         <div className="space-y-3">
+          {accessError && (
+            <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+              {accessError}
+            </p>
+          )}
           {nonAdminMembers.length === 0 && (
             <p className="text-sm text-muted-foreground">{t.adminNoNonAdminMembers}</p>
           )}
@@ -228,11 +254,13 @@ export default function AdminPage() {
               <div className="flex flex-wrap gap-2">
                 {SALONS.map(({ key, labelKey }) => {
                   const granted = hasAccess(m.username, key);
+                  const isToggling = toggling === `${m.username}:${key}`;
                   return (
                     <button
                       key={key}
                       onClick={() => toggleAccess(m.username, key)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
+                      disabled={isToggling}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium border transition-colors disabled:opacity-60 ${
                         granted
                           ? "bg-primary/10 border-primary/30 text-primary"
                           : "bg-muted border-border text-muted-foreground hover:bg-muted/80"
