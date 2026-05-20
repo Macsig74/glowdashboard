@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import type { Session } from "next-auth";
 import bcrypt from "bcryptjs";
 import { authOptions } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
-function adminOnly(session: Awaited<ReturnType<typeof getServerSession>>) {
+function adminOnly(session: Session | null) {
   if (!session?.user?.isAdmin)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   return null;
