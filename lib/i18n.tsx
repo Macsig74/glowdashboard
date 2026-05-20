@@ -105,6 +105,16 @@ const translations = {
     roleAdmin: "Admin",
     roleOther: "Other",
     rolePartner: "Partner",
+    // Admin panel
+    adminTitle: "Admin",
+    adminSubtitle: "Manage members and salon access",
+    adminMembers: "Members",
+    adminAccess: "Salon Access",
+    adminCreateMember: "Create a member",
+    adminCreateError: "Could not create member",
+    adminNoMembers: "No members yet.",
+    adminNoNonAdminMembers: "No non-admin members. Create one first.",
+    adminBadge: "Admin",
   },
   fr: {
     dashboard: "Tableau de bord",
@@ -200,6 +210,16 @@ const translations = {
     roleAdmin: "Admin",
     roleOther: "Autre",
     rolePartner: "Partenaire",
+    // Admin panel
+    adminTitle: "Admin",
+    adminSubtitle: "Gérer les membres et l'accès aux salons",
+    adminMembers: "Membres",
+    adminAccess: "Accès salons",
+    adminCreateMember: "Créer un membre",
+    adminCreateError: "Impossible de créer le membre",
+    adminNoMembers: "Aucun membre pour l'instant.",
+    adminNoNonAdminMembers: "Aucun membre non-admin. Créez-en un d'abord.",
+    adminBadge: "Admin",
   },
 } as const;
 

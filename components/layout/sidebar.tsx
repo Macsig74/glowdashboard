@@ -1,22 +1,41 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Server, Package, LogOut, Zap } from "lucide-react";
+import { LayoutDashboard, Users, Server, Package, LogOut, Zap, Shield } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { useLang } from "@/lib/i18n";
+import { useEffect, useState } from "react";
+
+const ALL_NAV_ITEMS = [
+  { href: "/", label: "dashboard" as const, icon: LayoutDashboard, salon: null },
+  { href: "/staff", label: "staff" as const, icon: Users, salon: "staff" },
+  { href: "/servers", label: "servers" as const, icon: Server, salon: "servers" },
+  { href: "/bbb", label: "bbb" as const, icon: Package, salon: "bbb" },
+];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { t } = useLang();
+  const [allowedSalons, setAllowedSalons] = useState<string[] | null>(null);
 
-  const navItems = [
-    { href: "/", label: t.dashboard, icon: LayoutDashboard },
-    { href: "/staff", label: t.staff, icon: Users },
-    { href: "/servers", label: t.servers, icon: Server },
-    { href: "/bbb", label: t.bbb, icon: Package },
-  ];
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch("/api/admin/my-access")
+      .then((r) => r.json())
+      .then((data) => setAllowedSalons(data.salons ?? []))
+      .catch(() => setAllowedSalons([]));
+  }, [session]);
+
+  const isAdmin = session?.user?.isAdmin ?? false;
+
+  const visibleItems = ALL_NAV_ITEMS.filter(({ salon }) => {
+    if (salon === null) return true; // dashboard always visible
+    if (isAdmin) return true;
+    if (!allowedSalons) return false; // loading
+    return allowedSalons.includes(salon);
+  });
 
   return (
     <aside className="flex flex-col h-screen w-64 bg-sidebar border-r border-sidebar-border fixed left-0 top-0 z-40">
@@ -28,7 +47,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map(({ href, label, icon: Icon }) => (
+        {visibleItems.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
             href={href}
@@ -40,9 +59,24 @@ export default function Sidebar() {
             )}
           >
             <Icon className="w-4 h-4" />
-            {label}
+            {t[label]}
           </Link>
         ))}
+
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
+              pathname === "/admin"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+            )}
+          >
+            <Shield className="w-4 h-4" />
+            {t.adminTitle}
+          </Link>
+        )}
       </nav>
 
       <div className="px-3 py-4 border-t border-sidebar-border">
@@ -51,9 +85,14 @@ export default function Sidebar() {
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-sm">
               {session.user?.name?.[0]?.toUpperCase()}
             </div>
-            <span className="text-sm text-sidebar-foreground font-medium truncate">
-              {session.user?.name}
-            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-sidebar-foreground font-medium truncate">
+                {session.user?.name}
+              </p>
+              {isAdmin && (
+                <p className="text-xs text-primary font-medium">{t.adminBadge}</p>
+              )}
+            </div>
           </div>
         )}
         <button
