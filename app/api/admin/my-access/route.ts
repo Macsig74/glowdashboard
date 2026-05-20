@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { supabaseAdmin } from "@/lib/supabase-admin";
+import { supabase } from "@/lib/supabase";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Admins have access to everything
   if (session.user.isAdmin) {
     return NextResponse.json({ salons: ["staff", "servers", "bbb", "admin"] });
   }
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from("gs_access")
     .select("salon")
     .eq("username", session.user.name ?? "");
