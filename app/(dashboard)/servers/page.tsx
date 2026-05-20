@@ -1,16 +1,23 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Plus, Trash2, CheckSquare, Square, X } from "lucide-react";
+import { Plus, Trash2, CheckSquare, Square, X, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLang } from "@/lib/i18n";
+
+type Priority = "low" | "medium" | "high";
 
 interface TodoItem {
   id: string;
   text: string;
+  description?: string;
+  priority: Priority;
+  due_date?: string;
+  assigned_to?: string;
   done: boolean;
 }
 
@@ -22,18 +29,36 @@ interface ServerInstance {
   created_at: string;
 }
 
+interface User {
+  id: string;
+  username: string;
+}
+
+const priorityColors: Record<Priority, string> = {
+  low: "text-blue-400",
+  medium: "text-yellow-500",
+  high: "text-red-500",
+};
+
+const emptyTask = { text: "", description: "", priority: "medium" as Priority, due_date: "", assigned_to: "" };
+
 export default function ServersPage() {
   const { t } = useLang();
   const [servers, setServers] = useState<ServerInstance[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newTodo, setNewTodo] = useState<{ [key: string]: string }>({});
+  const [taskDialog, setTaskDialog] = useState<string | null>(null);
+  const [taskForm, setTaskForm] = useState(emptyTask);
 
   const fetchServers = () =>
     fetch("/api/servers").then((r) => r.json()).then(setServers);
 
-  useEffect(() => { fetchServers(); }, []);
+  useEffect(() => {
+    fetchServers();
+    fetch("/api/users").then((r) => r.json()).then(setUsers);
+  }, []);
 
   const addServer = async () => {
     if (!newName) return;
@@ -53,15 +78,21 @@ export default function ServersPage() {
     fetchServers();
   };
 
-  const addTodo = async (serverId: string) => {
-    const text = newTodo[serverId];
-    if (!text?.trim()) return;
+  const addTask = async (serverId: string) => {
+    if (!taskForm.text.trim()) return;
     await fetch(`/api/servers/${serverId}/todos`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({
+        text: taskForm.text,
+        description: taskForm.description,
+        priority: taskForm.priority,
+        due_date: taskForm.due_date,
+        assigned_to: taskForm.assigned_to || null,
+      }),
     });
-    setNewTodo((prev) => ({ ...prev, [serverId]: "" }));
+    setTaskDialog(null);
+    setTaskForm(emptyTask);
     fetchServers();
   };
 
@@ -82,6 +113,9 @@ export default function ServersPage() {
     });
     fetchServers();
   };
+
+  const formatDate = (d: string) =>
+    new Date(d + "T00:00:00").toLocaleDateString(undefined, { day: "2-digit", month: "short" });
 
   return (
     <div>
@@ -114,7 +148,7 @@ export default function ServersPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {servers.map((server) => {
           const todos = server.gs_items ?? [];
-          const doneCount = todos.filter((todo) => todo.done).length;
+          const doneCount = todos.filter((td) => td.done).length;
           const total = todos.length;
           const progress = total > 0 ? (doneCount / total) * 100 : 0;
 
@@ -142,32 +176,126 @@ export default function ServersPage() {
                 </div>
               )}
 
-              <div className="space-y-1.5">
-                {todos.map((todo) => (
-                  <div key={todo.id} className="flex items-center gap-2 group">
-                    <button onClick={() => toggleTodo(server.id, todo.id, !todo.done)} className="text-muted-foreground hover:text-primary transition-colors shrink-0">
-                      {todo.done ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
-                    </button>
-                    <span className={`flex-1 text-sm ${todo.done ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                      {todo.text}
-                    </span>
-                    <button onClick={() => deleteTodo(server.id, todo.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+              {todos.length > 0 && (
+                <div className="space-y-1.5 max-h-64 overflow-y-auto pr-0.5">
+                  {todos.map((todo) => (
+                    <div key={todo.id} className={`flex items-start gap-2 p-2 rounded-md border transition-colors ${
+                      todo.done ? "bg-muted/30 border-border/50 opacity-60" : "bg-background border-border"
+                    }`}>
+                      <button
+                        onClick={() => toggleTodo(server.id, todo.id, !todo.done)}
+                        className="text-muted-foreground hover:text-primary transition-colors shrink-0 mt-0.5"
+                      >
+                        {todo.done ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Circle className={`w-2 h-2 shrink-0 fill-current ${priorityColors[todo.priority ?? "medium"]}`} />
+                          <span className={`text-sm font-medium truncate ${todo.done ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                            {todo.text}
+                          </span>
+                          {todo.assigned_to && (
+                            <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full shrink-0">
+                              {todo.assigned_to}
+                            </span>
+                          )}
+                          {todo.due_date && (
+                            <span className="text-xs text-muted-foreground shrink-0">{formatDate(todo.due_date)}</span>
+                          )}
+                        </div>
+                        {todo.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{todo.description}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => deleteTodo(server.id, todo.id)}
+                        className="text-muted-foreground hover:text-destructive transition-colors shrink-0 mt-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-              <div className="flex gap-2">
-                <Input
-                  value={newTodo[server.id] || ""}
-                  onChange={(e) => setNewTodo((prev) => ({ ...prev, [server.id]: e.target.value }))}
-                  onKeyDown={(e) => e.key === "Enter" && addTodo(server.id)}
-                  placeholder={t.newTask}
-                  className="text-sm h-9"
-                />
-                <Button size="sm" onClick={() => addTodo(server.id)}><Plus className="w-4 h-4" /></Button>
-              </div>
+              <Dialog
+                open={taskDialog === server.id}
+                onOpenChange={(o) => { setTaskDialog(o ? server.id : null); if (!o) setTaskForm(emptyTask); }}
+              >
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full">
+                    <Plus className="w-3.5 h-3.5" />{t.addTask}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>{t.addTask} — {server.name}</DialogTitle></DialogHeader>
+                  <div className="space-y-4 mt-2">
+                    <div>
+                      <Label>{t.taskTitle}</Label>
+                      <Input
+                        value={taskForm.text}
+                        onChange={(e) => setTaskForm((f) => ({ ...f, text: e.target.value }))}
+                        placeholder={t.taskTitlePlaceholder}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label>{t.description}</Label>
+                      <Textarea
+                        value={taskForm.description}
+                        onChange={(e) => setTaskForm((f) => ({ ...f, description: e.target.value }))}
+                        placeholder={t.taskDescPlaceholder}
+                        className="mt-1"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>{t.priority}</Label>
+                        <Select value={taskForm.priority} onValueChange={(v) => setTaskForm((f) => ({ ...f, priority: v as Priority }))}>
+                          <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">
+                              <span className="flex items-center gap-2"><Circle className="w-2 h-2 fill-blue-400 text-blue-400" />{t.low}</span>
+                            </SelectItem>
+                            <SelectItem value="medium">
+                              <span className="flex items-center gap-2"><Circle className="w-2 h-2 fill-yellow-500 text-yellow-500" />{t.medium}</span>
+                            </SelectItem>
+                            <SelectItem value="high">
+                              <span className="flex items-center gap-2"><Circle className="w-2 h-2 fill-red-500 text-red-500" />{t.high}</span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>{t.dueDate}</Label>
+                        <Input
+                          type="date"
+                          value={taskForm.due_date}
+                          onChange={(e) => setTaskForm((f) => ({ ...f, due_date: e.target.value }))}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label>{t.assignTo}</Label>
+                      <Select
+                        value={taskForm.assigned_to || "__none__"}
+                        onValueChange={(v) => setTaskForm((f) => ({ ...f, assigned_to: v === "__none__" ? "" : v }))}
+                      >
+                        <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">{t.unassigned}</SelectItem>
+                          {users.map((u) => (
+                            <SelectItem key={u.id} value={u.username}>{u.username}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={() => addTask(server.id)} className="w-full">{t.add}</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           );
         })}
