@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Server, Package, LogOut, Zap, Shield } from "lucide-react";
+import { LayoutDashboard, Users, Server, Package, LogOut, Zap, Shield, Globe } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { useLang } from "@/lib/i18n";
@@ -77,6 +77,15 @@ export default function Sidebar() {
             {t.adminTitle}
           </Link>
         )}
+
+        <a
+          href="/accueil"
+          target="_blank"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors"
+        >
+          <Globe className="w-4 h-4" />
+          Page accueil
+        </a>
       </nav>
 
       <div className="px-3 py-4 border-t border-sidebar-border">
