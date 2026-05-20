@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -12,7 +12,7 @@ export async function GET() {
     return NextResponse.json({ salons: ["staff", "servers", "bbb", "admin"] });
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("gs_access")
     .select("salon")
     .eq("username", session.user.name ?? "");

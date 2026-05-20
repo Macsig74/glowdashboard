@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.isAdmin)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { data, error } = await supabase.from("gs_access").select("*");
+  const { data, error } = await supabaseAdmin.from("gs_access").select("*");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data ?? []);
 }
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   if (!username || !salon)
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from("gs_access")
     .upsert({ username, salon }, { onConflict: "username,salon" });
 
@@ -39,7 +39,7 @@ export async function DELETE(req: NextRequest) {
   if (!username || !salon)
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from("gs_access")
     .delete()
     .eq("username", username)
