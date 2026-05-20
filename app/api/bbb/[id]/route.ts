@@ -1,16 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Plugin from "@/lib/models/Plugin";
+import { supabase } from "@/lib/supabase";
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  await connectDB();
   const body = await req.json();
-  const plugin = await Plugin.findByIdAndUpdate(params.id, body, { new: true });
-  return NextResponse.json(plugin);
+  const { data, error } = await supabase
+    .from("gs_forge")
+    .update({
+      name: body.name,
+      plugin_name: body.pluginName,
+      description: body.description,
+      author: body.author,
+      price: body.price,
+      state: body.state,
+      licensed: body.licensed,
+      obfuscated: body.obfuscated,
+      status: body.status,
+    })
+    .eq("id", params.id)
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ...data, pluginName: data.plugin_name });
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  await connectDB();
-  await Plugin.findByIdAndDelete(params.id);
+  const { error } = await supabase.from("gs_forge").delete().eq("id", params.id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }

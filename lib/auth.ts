@@ -1,8 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import connectDB from "./mongodb";
-import User from "./models/User";
+import { supabase } from "./supabase";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -15,14 +14,18 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null;
 
-        await connectDB();
-        const user = await User.findOne({ username: credentials.username });
+        const { data: user } = await supabase
+          .from("gs_phantom")
+          .select("*")
+          .eq("username", credentials.username)
+          .single();
+
         if (!user) return null;
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) return null;
 
-        return { id: user._id.toString(), name: user.username };
+        return { id: user.id, name: user.username };
       },
     }),
   ],

@@ -1,20 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Server from "@/lib/models/Server";
+import { supabase } from "@/lib/supabase";
 
 export async function GET() {
-  await connectDB();
-  const servers = await Server.find().sort({ createdAt: -1 });
-  return NextResponse.json(servers);
+  const { data, error } = await supabase
+    .from("gs_cluster")
+    .select("*, gs_items(*)")
+    .order("created_at", { ascending: false });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    await connectDB();
-    const server = await Server.create(body);
-    return NextResponse.json(server, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    const { name, description } = await req.json();
+    const { data, error } = await supabase
+      .from("gs_cluster")
+      .insert({ name, description })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return NextResponse.json(data, { status: 201 });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

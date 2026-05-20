@@ -2,29 +2,23 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, CheckSquare, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 interface TodoItem {
-  _id: string;
+  id: string;
   text: string;
   done: boolean;
 }
 
 interface ServerInstance {
-  _id: string;
+  id: string;
   name: string;
   description?: string;
-  todoList: TodoItem[];
-  createdAt: string;
+  gs_items: TodoItem[];
+  created_at: string;
 }
 
 export default function ServersPage() {
@@ -37,9 +31,7 @@ export default function ServersPage() {
   const fetchServers = () =>
     fetch("/api/servers").then((r) => r.json()).then(setServers);
 
-  useEffect(() => {
-    fetchServers();
-  }, []);
+  useEffect(() => { fetchServers(); }, []);
 
   const addServer = async () => {
     if (!newName) return;
@@ -98,33 +90,18 @@ export default function ServersPage() {
         </div>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4" />
-              Ajouter un serveur
-            </Button>
+            <Button><Plus className="w-4 h-4" />Ajouter un serveur</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Ajouter un serveur</DialogTitle>
-            </DialogHeader>
+            <DialogHeader><DialogTitle>Ajouter un serveur</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">
               <div>
                 <Label>Nom</Label>
-                <Input
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Nom du serveur"
-                  className="mt-1"
-                />
+                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom du serveur" className="mt-1" />
               </div>
               <div>
                 <Label>Description</Label>
-                <Textarea
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Description (optionnel)"
-                  className="mt-1"
-                />
+                <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Description (optionnel)" className="mt-1" />
               </div>
               <Button onClick={addServer} className="w-full">Créer</Button>
             </div>
@@ -134,23 +111,19 @@ export default function ServersPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {servers.map((server) => {
-          const done = server.todoList.filter((t) => t.done).length;
-          const total = server.todoList.length;
-          const progress = total > 0 ? (done / total) * 100 : 0;
+          const todos = server.gs_items ?? [];
+          const doneCount = todos.filter((t) => t.done).length;
+          const total = todos.length;
+          const progress = total > 0 ? (doneCount / total) * 100 : 0;
 
           return (
-            <div key={server._id} className="bg-card border border-border rounded-lg p-5 shadow-sm flex flex-col gap-4">
+            <div key={server.id} className="bg-card border border-border rounded-lg p-5 shadow-sm flex flex-col gap-4">
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-semibold text-foreground text-lg">{server.name}</h3>
-                  {server.description && (
-                    <p className="text-sm text-muted-foreground mt-0.5">{server.description}</p>
-                  )}
+                  {server.description && <p className="text-sm text-muted-foreground mt-0.5">{server.description}</p>}
                 </div>
-                <button
-                  onClick={() => deleteServer(server._id)}
-                  className="text-muted-foreground hover:text-destructive transition-colors"
-                >
+                <button onClick={() => deleteServer(server.id)} className="text-muted-foreground hover:text-destructive transition-colors">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -159,41 +132,24 @@ export default function ServersPage() {
                 <div>
                   <div className="flex justify-between text-xs text-muted-foreground mb-1">
                     <span>Todo list</span>
-                    <span>{done}/{total}</span>
+                    <span>{doneCount}/{total}</span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-1.5">
-                    <div
-                      className="bg-primary h-1.5 rounded-full transition-all"
-                      style={{ width: `${progress}%` }}
-                    />
+                    <div className="bg-primary h-1.5 rounded-full transition-all" style={{ width: `${progress}%` }} />
                   </div>
                 </div>
               )}
 
               <div className="space-y-1.5">
-                {server.todoList.map((todo) => (
-                  <div key={todo._id} className="flex items-center gap-2 group">
-                    <button
-                      onClick={() => toggleTodo(server._id, todo._id, !todo.done)}
-                      className="text-muted-foreground hover:text-primary transition-colors shrink-0"
-                    >
-                      {todo.done ? (
-                        <CheckSquare className="w-4 h-4 text-primary" />
-                      ) : (
-                        <Square className="w-4 h-4" />
-                      )}
+                {todos.map((todo) => (
+                  <div key={todo.id} className="flex items-center gap-2 group">
+                    <button onClick={() => toggleTodo(server.id, todo.id, !todo.done)} className="text-muted-foreground hover:text-primary transition-colors shrink-0">
+                      {todo.done ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
                     </button>
-                    <span
-                      className={`flex-1 text-sm ${
-                        todo.done ? "line-through text-muted-foreground" : "text-foreground"
-                      }`}
-                    >
+                    <span className={`flex-1 text-sm ${todo.done ? "line-through text-muted-foreground" : "text-foreground"}`}>
                       {todo.text}
                     </span>
-                    <button
-                      onClick={() => deleteTodo(server._id, todo._id)}
-                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
-                    >
+                    <button onClick={() => deleteTodo(server.id, todo.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all">
                       <X className="w-3 h-3" />
                     </button>
                   </div>
@@ -202,17 +158,13 @@ export default function ServersPage() {
 
               <div className="flex gap-2">
                 <Input
-                  value={newTodo[server._id] || ""}
-                  onChange={(e) =>
-                    setNewTodo((prev) => ({ ...prev, [server._id]: e.target.value }))
-                  }
-                  onKeyDown={(e) => e.key === "Enter" && addTodo(server._id)}
+                  value={newTodo[server.id] || ""}
+                  onChange={(e) => setNewTodo((prev) => ({ ...prev, [server.id]: e.target.value }))}
+                  onKeyDown={(e) => e.key === "Enter" && addTodo(server.id)}
                   placeholder="Nouvelle tâche..."
                   className="text-sm h-9"
                 />
-                <Button size="sm" onClick={() => addTodo(server._id)}>
-                  <Plus className="w-4 h-4" />
-                </Button>
+                <Button size="sm" onClick={() => addTodo(server.id)}><Plus className="w-4 h-4" /></Button>
               </div>
             </div>
           );

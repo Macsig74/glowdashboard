@@ -3,31 +3,20 @@ import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type PluginState = "not_started" | "in_progress" | "polishing" | "review" | "finished";
 type PluginStatus = "not_ready" | "ready" | "on_bbb_free" | "on_bbb_paid";
 type PluginAuthor = "Mystic" | "MacSig";
 
 interface Plugin {
-  _id: string;
+  id: string;
   name: string;
-  pluginName: string;
+  plugin_name: string;
   description: string;
   author: PluginAuthor;
   price: number;
@@ -35,7 +24,7 @@ interface Plugin {
   licensed: boolean;
   obfuscated: boolean;
   status: PluginStatus;
-  createdAt: string;
+  created_at: string;
 }
 
 const stateLabels: Record<PluginState, string> = {
@@ -89,21 +78,15 @@ export default function BBBPage() {
   const fetchPlugins = () =>
     fetch("/api/bbb").then((r) => r.json()).then(setPlugins);
 
-  useEffect(() => {
-    fetchPlugins();
-  }, []);
+  useEffect(() => { fetchPlugins(); }, []);
 
-  const openAdd = () => {
-    setEditingId(null);
-    setForm(emptyForm);
-    setOpen(true);
-  };
+  const openAdd = () => { setEditingId(null); setForm(emptyForm); setOpen(true); };
 
   const openEdit = (plugin: Plugin) => {
-    setEditingId(plugin._id);
+    setEditingId(plugin.id);
     setForm({
       name: plugin.name,
-      pluginName: plugin.pluginName,
+      pluginName: plugin.plugin_name,
       description: plugin.description,
       author: plugin.author,
       price: plugin.price.toString(),
@@ -118,17 +101,9 @@ export default function BBBPage() {
   const save = async () => {
     const body = { ...form, price: parseFloat(form.price) || 0 };
     if (editingId) {
-      await fetch(`/api/bbb/${editingId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      await fetch(`/api/bbb/${editingId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     } else {
-      await fetch("/api/bbb", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      await fetch("/api/bbb", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     }
     setOpen(false);
     fetchPlugins();
@@ -149,10 +124,7 @@ export default function BBBPage() {
           <h1 className="text-2xl font-bold text-foreground">Build by Bit</h1>
           <p className="text-muted-foreground mt-1">{plugins.length} plugin(s)</p>
         </div>
-        <Button onClick={openAdd}>
-          <Plus className="w-4 h-4" />
-          Ajouter un plugin
-        </Button>
+        <Button onClick={openAdd}><Plus className="w-4 h-4" />Ajouter un plugin</Button>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -192,9 +164,7 @@ export default function BBBPage() {
               <Select value={form.state} onValueChange={(v) => updateField("state", v as PluginState)}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {Object.entries(stateLabels).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
+                  {Object.entries(stateLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -203,9 +173,7 @@ export default function BBBPage() {
               <Select value={form.status} onValueChange={(v) => updateField("status", v as PluginStatus)}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {Object.entries(statusLabels).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
+                  {Object.entries(statusLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -217,9 +185,7 @@ export default function BBBPage() {
               <Switch checked={form.obfuscated} onCheckedChange={(v) => updateField("obfuscated", v)} />
               <Label>Obfusqué</Label>
             </div>
-            <Button onClick={save} className="col-span-2 w-full mt-2">
-              {editingId ? "Modifier" : "Créer"}
-            </Button>
+            <Button onClick={save} className="col-span-2 w-full mt-2">{editingId ? "Modifier" : "Créer"}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -242,18 +208,16 @@ export default function BBBPage() {
           </thead>
           <tbody>
             {plugins.map((plugin, i) => (
-              <tr key={plugin._id} className={`border-b border-border last:border-0 ${i % 2 === 0 ? "bg-card" : "bg-muted/30"} hover:bg-accent/30 transition-colors`}>
+              <tr key={plugin.id} className={`border-b border-border last:border-0 ${i % 2 === 0 ? "bg-card" : "bg-muted/30"} hover:bg-accent/30 transition-colors`}>
                 <td className="px-4 py-3 font-medium text-foreground">{plugin.name}</td>
-                <td className="px-4 py-3 font-mono text-foreground">{plugin.pluginName}</td>
+                <td className="px-4 py-3 font-mono text-foreground">{plugin.plugin_name}</td>
                 <td className="px-4 py-3 text-muted-foreground max-w-[200px] truncate">{plugin.description}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                     plugin.author === "Mystic"
                       ? "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
                       : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                  }`}>
-                    {plugin.author}
-                  </span>
+                  }`}>{plugin.author}</span>
                 </td>
                 <td className="px-4 py-3 text-foreground">{plugin.price > 0 ? `${plugin.price}€` : "Gratuit"}</td>
                 <td className="px-4 py-3">
@@ -277,7 +241,7 @@ export default function BBBPage() {
                     <button onClick={() => openEdit(plugin)} className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => deletePlugin(plugin._id)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                    <button onClick={() => deletePlugin(plugin.id)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>

@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Server from "@/lib/models/Server";
-
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  await connectDB();
-  const body = await req.json();
-  const server = await Server.findByIdAndUpdate(params.id, body, { new: true });
-  return NextResponse.json(server);
-}
+import { supabase } from "@/lib/supabase";
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  await connectDB();
-  await Server.findByIdAndDelete(params.id);
+  const { error } = await supabase.from("gs_cluster").delete().eq("id", params.id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
+}
+
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const body = await req.json();
+  const { data, error } = await supabase
+    .from("gs_cluster")
+    .update(body)
+    .eq("id", params.id)
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
 }

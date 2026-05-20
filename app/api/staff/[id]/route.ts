@@ -1,23 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Staff from "@/lib/models/Staff";
+import { supabase } from "@/lib/supabase";
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
-  await connectDB();
-  const member = await Staff.findById(params.id);
-  if (!member) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(member);
+export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+  const { error } = await supabase.from("gs_roster").delete().eq("id", params.id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  await connectDB();
   const body = await req.json();
-  const member = await Staff.findByIdAndUpdate(params.id, body, { new: true });
-  return NextResponse.json(member);
-}
+  const { data, error } = await supabase
+    .from("gs_roster")
+    .update(body)
+    .eq("id", params.id)
+    .select()
+    .single();
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  await connectDB();
-  await Staff.findByIdAndDelete(params.id);
-  return NextResponse.json({ success: true });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
 }

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import connectDB from "@/lib/mongodb";
-import User from "@/lib/models/User";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,15 +8,22 @@ export async function POST(req: NextRequest) {
     if (!username || !password)
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
-    await connectDB();
-    const existing = await User.findOne({ username });
+    const { data: existing } = await supabase
+      .from("gs_phantom")
+      .select("id")
+      .eq("username", username)
+      .single();
+
     if (existing)
       return NextResponse.json({ error: "User already exists" }, { status: 409 });
 
     const hashed = await bcrypt.hash(password, 10);
-    await User.create({ username, password: hashed });
+    const { error } = await supabase.from("gs_phantom").insert({ username, password: hashed });
+    if (error) throw error;
+
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  } catch (err) {
+    console.error("[register]", err);
+    return NextResponse.json({ error: "Server error", detail: String(err) }, { status: 500 });
   }
 }
