@@ -37,11 +37,14 @@ export default function DashboardPage() {
       fetch("/api/servers").then((r) => r.json()),
       fetch("/api/bbb").then((r) => r.json()),
     ]).then(([staff, servers, plugins]) => {
+      const s = Array.isArray(staff) ? staff : [];
+      const sv = Array.isArray(servers) ? servers : [];
+      const pl = Array.isArray(plugins) ? plugins : [];
       setStats({
-        staff: staff.length,
-        servers: servers.length,
-        plugins: plugins.length,
-        finishedPlugins: plugins.filter((p: { state: string }) => p.state === "finished").length,
+        staff: s.length,
+        servers: sv.length,
+        plugins: pl.length,
+        finishedPlugins: pl.filter((p: { state: string }) => p.state === "finished").length,
       });
     });
   }, []);
@@ -50,7 +53,7 @@ export default function DashboardPage() {
     if (!session?.user?.name) return;
     fetch(`/api/tasks?username=${encodeURIComponent(session.user.name)}`)
       .then((r) => r.json())
-      .then(setMyTasks);
+      .then((d) => setMyTasks(Array.isArray(d) ? d : []));
   }, [session?.user?.name]);
 
   const formatDate = (d: string) =>

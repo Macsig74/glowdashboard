@@ -71,7 +71,7 @@ export default function StaffPage() {
   const [newRankRole, setNewRankRole] = useState("");
 
   const fetchStaff = () =>
-    fetch("/api/staff").then((r) => r.json()).then(setStaff);
+    fetch("/api/staff").then((r) => r.json()).then((d) => setStaff(Array.isArray(d) ? d : []));
 
   useEffect(() => { fetchStaff(); }, []);
 

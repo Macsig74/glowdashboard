@@ -63,7 +63,7 @@ export default function BBBPage() {
   const [form, setForm] = useState(emptyForm);
 
   const fetchPlugins = () =>
-    fetch("/api/bbb").then((r) => r.json()).then(setPlugins);
+    fetch("/api/bbb").then((r) => r.json()).then((d) => setPlugins(Array.isArray(d) ? d : []));
 
   useEffect(() => { fetchPlugins(); }, []);
 

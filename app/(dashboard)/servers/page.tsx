@@ -53,11 +53,11 @@ export default function ServersPage() {
   const [taskForm, setTaskForm] = useState(emptyTask);
 
   const fetchServers = () =>
-    fetch("/api/servers").then((r) => r.json()).then(setServers);
+    fetch("/api/servers").then((r) => r.json()).then((d) => setServers(Array.isArray(d) ? d : []));
 
   useEffect(() => {
     fetchServers();
-    fetch("/api/users").then((r) => r.json()).then(setUsers);
+    fetch("/api/users").then((r) => r.json()).then((d) => setUsers(Array.isArray(d) ? d : []));
   }, []);
 
   const addServer = async () => {
