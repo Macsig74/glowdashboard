@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Plus, ThumbsUp, ThumbsDown, TrendingUp, TrendingDown, Trash2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSession } from "next-auth/react";
 
 interface Note {
@@ -28,7 +28,29 @@ interface StaffMember {
   created_at: string;
 }
 
-const ROLES = ["Helper", "Modérateur", "Modérateur+", "Responsable", "Admin", "Co-Owner", "Owner"];
+const ROLE_CATEGORIES = [
+  { label: "Staff", roles: ["Helper", "Sr Helper", "Modo Junior", "Modo", "Modo+"] },
+  { label: "Admin", roles: ["Admin", "Lead Admin"] },
+  { label: "Autre", roles: ["Dev", "Lead Dev", "Manager"] },
+  { label: "Partenaire", roles: ["Partenaire Nv1", "Partenaire Nv2", "Partenaire Nv3", "Co-Owner"] },
+];
+const ALL_ROLES = ROLE_CATEGORIES.flatMap((c) => c.roles);
+
+function RoleOptions() {
+  return (
+    <>
+      {ROLE_CATEGORIES.map((cat, i) => (
+        <React.Fragment key={cat.label}>
+          {i > 0 && <SelectSeparator />}
+          <SelectGroup>
+            <SelectLabel>{cat.label}</SelectLabel>
+            {cat.roles.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+          </SelectGroup>
+        </React.Fragment>
+      ))}
+    </>
+  );
+}
 
 export default function StaffPage() {
   const { data: session } = useSession();
@@ -137,9 +159,7 @@ export default function StaffPage() {
                 <Label>Rôle</Label>
                 <Select value={newRole} onValueChange={setNewRole}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent><RoleOptions /></SelectContent>
                 </Select>
               </div>
               <Button onClick={addStaff} className="w-full">Ajouter</Button>
@@ -227,9 +247,7 @@ export default function StaffPage() {
                       <Label>Nouveau rôle</Label>
                       <Select value={newRankRole || member.role} onValueChange={setNewRankRole}>
                         <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                        </SelectContent>
+                        <SelectContent><RoleOptions /></SelectContent>
                       </Select>
                     </div>
                     <Button onClick={() => selectedMember && doRank(selectedMember)} className="w-full">Confirmer</Button>

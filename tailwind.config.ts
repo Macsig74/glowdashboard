@@ -56,7 +56,7 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ["DM Sans", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
         serif: ["Source Serif 4", "serif"],
       },
