@@ -37,6 +37,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export function normalizePlugin(p: Record<string, unknown>) {
+function normalizePlugin(p: Record<string, unknown>) {
   return { ...p, pluginName: p.plugin_name };
 }
