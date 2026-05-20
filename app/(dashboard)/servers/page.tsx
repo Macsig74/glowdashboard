@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useLang } from "@/lib/i18n";
 
 interface TodoItem {
   id: string;
@@ -22,6 +23,7 @@ interface ServerInstance {
 }
 
 export default function ServersPage() {
+  const { t } = useLang();
   const [servers, setServers] = useState<ServerInstance[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -85,25 +87,25 @@ export default function ServersPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Serveurs</h1>
-          <p className="text-muted-foreground mt-1">{servers.length} serveur(s)</p>
+          <h1 className="text-2xl font-bold text-foreground">{t.servers}</h1>
+          <p className="text-muted-foreground mt-1">{t.serversSubtitle(servers.length)}</p>
         </div>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="w-4 h-4" />Ajouter un serveur</Button>
+            <Button><Plus className="w-4 h-4" />{t.addServer}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Ajouter un serveur</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t.addServerTitle}</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">
               <div>
-                <Label>Nom</Label>
-                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom du serveur" className="mt-1" />
+                <Label>{t.name}</Label>
+                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t.namePlaceholder} className="mt-1" />
               </div>
               <div>
-                <Label>Description</Label>
-                <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Description (optionnel)" className="mt-1" />
+                <Label>{t.description}</Label>
+                <Textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder={t.descriptionPlaceholder} className="mt-1" />
               </div>
-              <Button onClick={addServer} className="w-full">Créer</Button>
+              <Button onClick={addServer} className="w-full">{t.create}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -112,7 +114,7 @@ export default function ServersPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {servers.map((server) => {
           const todos = server.gs_items ?? [];
-          const doneCount = todos.filter((t) => t.done).length;
+          const doneCount = todos.filter((todo) => todo.done).length;
           const total = todos.length;
           const progress = total > 0 ? (doneCount / total) * 100 : 0;
 
@@ -131,7 +133,7 @@ export default function ServersPage() {
               {total > 0 && (
                 <div>
                   <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                    <span>Todo list</span>
+                    <span>{t.todoList}</span>
                     <span>{doneCount}/{total}</span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-1.5">
@@ -161,7 +163,7 @@ export default function ServersPage() {
                   value={newTodo[server.id] || ""}
                   onChange={(e) => setNewTodo((prev) => ({ ...prev, [server.id]: e.target.value }))}
                   onKeyDown={(e) => e.key === "Enter" && addTodo(server.id)}
-                  placeholder="Nouvelle tâche..."
+                  placeholder={t.newTask}
                   className="text-sm h-9"
                 />
                 <Button size="sm" onClick={() => addTodo(server.id)}><Plus className="w-4 h-4" /></Button>
@@ -172,7 +174,7 @@ export default function ServersPage() {
 
         {servers.length === 0 && (
           <div className="col-span-full text-center py-16 text-muted-foreground">
-            Aucun serveur. Ajoutez-en un !
+            {t.noServers}
           </div>
         )}
       </div>

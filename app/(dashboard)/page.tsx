@@ -1,15 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Users, Server, Package, TrendingUp } from "lucide-react";
+import { useLang } from "@/lib/i18n";
 
-interface Stats {
-  staff: number;
-  servers: number;
-  plugins: number;
-  finishedPlugins: number;
-}
+interface Stats { staff: number; servers: number; plugins: number; finishedPlugins: number; }
 
 export default function DashboardPage() {
+  const { t } = useLang();
   const [stats, setStats] = useState<Stats>({ staff: 0, servers: 0, plugins: 0, finishedPlugins: 0 });
 
   useEffect(() => {
@@ -28,19 +25,18 @@ export default function DashboardPage() {
   }, []);
 
   const cards = [
-    { label: "Membres du staff", value: stats.staff, icon: Users, color: "text-amber-500" },
-    { label: "Serveurs", value: stats.servers, icon: Server, color: "text-blue-500" },
-    { label: "Plugins total", value: stats.plugins, icon: Package, color: "text-purple-500" },
-    { label: "Plugins terminés", value: stats.finishedPlugins, icon: TrendingUp, color: "text-green-500" },
+    { label: t.staffMembers, value: stats.staff, icon: Users, color: "text-amber-500" },
+    { label: t.servers, value: stats.servers, icon: Server, color: "text-blue-500" },
+    { label: t.totalPlugins, value: stats.plugins, icon: Package, color: "text-purple-500" },
+    { label: t.finishedPlugins, value: stats.finishedPlugins, icon: TrendingUp, color: "text-green-500" },
   ];
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground">Tableau de bord</h1>
-        <p className="text-muted-foreground mt-1">Vue d&apos;ensemble de GlowStudio</p>
+        <h1 className="text-2xl font-bold text-foreground">{t.dashboard}</h1>
+        <p className="text-muted-foreground mt-1">{t.dashboardSubtitle}</p>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-card border border-border rounded-lg p-6 shadow-sm">
@@ -52,12 +48,9 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
-
       <div className="mt-8 bg-card border border-border rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-foreground mb-2">Bienvenue sur GlowStudio Dashboard</h2>
-        <p className="text-muted-foreground text-sm">
-          Gérez votre staff, vos serveurs et vos plugins depuis ce tableau de bord centralisé.
-        </p>
+        <h2 className="text-lg font-semibold text-foreground mb-2">{t.welcomeTitle}</h2>
+        <p className="text-muted-foreground text-sm">{t.welcomeText}</p>
       </div>
     </div>
   );

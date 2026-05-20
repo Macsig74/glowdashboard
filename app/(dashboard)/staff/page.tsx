@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useLang } from "@/lib/i18n";
 import { Plus, ThumbsUp, ThumbsDown, TrendingUp, TrendingDown, Trash2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,22 +29,22 @@ interface StaffMember {
   created_at: string;
 }
 
-const ROLE_CATEGORIES = [
-  { label: "Staff", roles: ["Helper", "Sr Helper", "Modo Junior", "Modo", "Modo+"] },
-  { label: "Admin", roles: ["Admin", "Lead Admin"] },
-  { label: "Autre", roles: ["Dev", "Lead Dev", "Manager"] },
-  { label: "Partenaire", roles: ["Partenaire Nv1", "Partenaire Nv2", "Partenaire Nv3", "Co-Owner"] },
+const ROLE_CATEGORIES_DEF = [
+  { key: "roleStaff" as const, roles: ["Helper", "Sr Helper", "Modo Junior", "Modo", "Modo+"] },
+  { key: "roleAdmin" as const, roles: ["Admin", "Lead Admin"] },
+  { key: "roleOther" as const, roles: ["Dev", "Lead Dev", "Manager"] },
+  { key: "rolePartner" as const, roles: ["Partenaire Nv1", "Partenaire Nv2", "Partenaire Nv3", "Co-Owner"] },
 ];
-const ALL_ROLES = ROLE_CATEGORIES.flatMap((c) => c.roles);
+const ALL_ROLES = ROLE_CATEGORIES_DEF.flatMap((c) => c.roles);
 
-function RoleOptions() {
+function RoleOptions({ t }: { t: { roleStaff: string; roleAdmin: string; roleOther: string; rolePartner: string } }) {
   return (
     <>
-      {ROLE_CATEGORIES.map((cat, i) => (
-        <React.Fragment key={cat.label}>
+      {ROLE_CATEGORIES_DEF.map((cat, i) => (
+        <React.Fragment key={cat.key}>
           {i > 0 && <SelectSeparator />}
           <SelectGroup>
-            <SelectLabel>{cat.label}</SelectLabel>
+            <SelectLabel>{t[cat.key]}</SelectLabel>
             {cat.roles.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
           </SelectGroup>
         </React.Fragment>
@@ -54,6 +55,7 @@ function RoleOptions() {
 
 export default function StaffPage() {
   const { data: session } = useSession();
+  const { t } = useLang();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState<string | null>(null);
@@ -141,28 +143,28 @@ export default function StaffPage() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Staff</h1>
-          <p className="text-muted-foreground mt-1">{staff.length} membre(s)</p>
+          <h1 className="text-2xl font-bold text-foreground">{t.staff}</h1>
+          <p className="text-muted-foreground mt-1">{t.staffSubtitle(staff.length)}</p>
         </div>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="w-4 h-4" />Ajouter un staff</Button>
+            <Button><Plus className="w-4 h-4" />{t.addStaff}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Ajouter un membre du staff</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t.addStaffTitle}</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">
               <div>
-                <Label>Pseudo</Label>
-                <Input value={newUsername} onChange={(e) => setNewUsername(e.target.value)} placeholder="Pseudo Minecraft" className="mt-1" />
+                <Label>{t.username}</Label>
+                <Input value={newUsername} onChange={(e) => setNewUsername(e.target.value)} placeholder={t.usernamePlaceholder} className="mt-1" />
               </div>
               <div>
-                <Label>Rôle</Label>
+                <Label>{t.role}</Label>
                 <Select value={newRole} onValueChange={setNewRole}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent><RoleOptions /></SelectContent>
+                  <SelectContent><RoleOptions t={t} /></SelectContent>
                 </Select>
               </div>
-              <Button onClick={addStaff} className="w-full">Ajouter</Button>
+              <Button onClick={addStaff} className="w-full">{t.add}</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -184,31 +186,31 @@ export default function StaffPage() {
             <div className="flex flex-wrap gap-2">
               <Dialog open={noteOpen === member.id} onOpenChange={(o) => setNoteOpen(o ? member.id : null)}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">Ajouter une note</Button>
+                  <Button variant="outline" size="sm">{t.addNote}</Button>
                 </DialogTrigger>
                 <DialogContent>
-                  <DialogHeader><DialogTitle>Note pour {member.username}</DialogTitle></DialogHeader>
+                  <DialogHeader><DialogTitle>{t.noteFor(member.username)}</DialogTitle></DialogHeader>
                   <div className="space-y-4 mt-2">
                     <div>
-                      <Label>Contenu</Label>
-                      <Textarea value={noteContent} onChange={(e) => setNoteContent(e.target.value)} placeholder="Contenu de la note..." className="mt-1" />
+                      <Label>{t.noteContent}</Label>
+                      <Textarea value={noteContent} onChange={(e) => setNoteContent(e.target.value)} placeholder={t.noteContentPlaceholder} className="mt-1" />
                     </div>
                     <div className="flex gap-3">
-                      {(["good", "bad"] as const).map((t) => (
-                        <button key={t} onClick={() => setNoteType(t)}
+                      {(["good", "bad"] as const).map((ntype) => (
+                        <button key={ntype} onClick={() => setNoteType(ntype)}
                           className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md border text-sm font-medium transition-colors ${
-                            noteType === t
-                              ? t === "good" ? "bg-green-100 border-green-400 text-green-700 dark:bg-green-900/30 dark:border-green-600 dark:text-green-400"
-                                             : "bg-red-100 border-red-400 text-red-700 dark:bg-red-900/30 dark:border-red-600 dark:text-red-400"
+                            noteType === ntype
+                              ? ntype === "good" ? "bg-green-100 border-green-400 text-green-700 dark:bg-green-900/30 dark:border-green-600 dark:text-green-400"
+                                                 : "bg-red-100 border-red-400 text-red-700 dark:bg-red-900/30 dark:border-red-600 dark:text-red-400"
                               : "border-border text-muted-foreground hover:bg-accent"
                           }`}>
-                          {t === "good" ? <ThumbsUp className="w-4 h-4" /> : <ThumbsDown className="w-4 h-4" />}
-                          {t === "good" ? "Bien" : "Pas bien"}
+                          {ntype === "good" ? <ThumbsUp className="w-4 h-4" /> : <ThumbsDown className="w-4 h-4" />}
+                          {ntype === "good" ? t.good : t.bad}
                         </button>
                       ))}
                     </div>
                     <div>
-                      <Label>Poids (impact sur le score)</Label>
+                      <Label>{t.weight}</Label>
                       <div className="flex gap-2 mt-1">
                         {(["1", "2", "3"] as const).map((w) => (
                           <button key={w} onClick={() => setNoteWeight(w)}
@@ -218,17 +220,17 @@ export default function StaffPage() {
                         ))}
                       </div>
                     </div>
-                    <Button onClick={() => addNote(member.id)} className="w-full">Enregistrer la note</Button>
+                    <Button onClick={() => addNote(member.id)} className="w-full">{t.saveNote}</Button>
                   </div>
                 </DialogContent>
               </Dialog>
 
               <Dialog open={rankOpen === member.id} onOpenChange={(o) => { setRankOpen(o ? member.id : null); setSelectedMember(o ? member : null); }}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">Rang</Button>
+                  <Button variant="outline" size="sm">{t.rank}</Button>
                 </DialogTrigger>
                 <DialogContent>
-                  <DialogHeader><DialogTitle>Changer le rang de {member.username}</DialogTitle></DialogHeader>
+                  <DialogHeader><DialogTitle>{t.changeRank(member.username)}</DialogTitle></DialogHeader>
                   <div className="space-y-4 mt-2">
                     <div className="flex gap-3">
                       {(["rankup", "derank"] as const).map((a) => (
@@ -239,18 +241,18 @@ export default function StaffPage() {
                               : "border-border text-muted-foreground hover:bg-accent"
                           }`}>
                           {a === "rankup" ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                          {a === "rankup" ? "Rankup" : "Derank"}
+                          {a === "rankup" ? t.rankup : t.derank}
                         </button>
                       ))}
                     </div>
                     <div>
-                      <Label>Nouveau rôle</Label>
+                      <Label>{t.newRole}</Label>
                       <Select value={newRankRole || member.role} onValueChange={setNewRankRole}>
                         <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                        <SelectContent><RoleOptions /></SelectContent>
+                        <SelectContent><RoleOptions t={t} /></SelectContent>
                       </Select>
                     </div>
-                    <Button onClick={() => selectedMember && doRank(selectedMember)} className="w-full">Confirmer</Button>
+                    <Button onClick={() => selectedMember && doRank(selectedMember)} className="w-full">{t.confirm}</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -263,7 +265,7 @@ export default function StaffPage() {
             {(member.gs_ticker ?? []).length > 0 && (
               <div className="space-y-2 mt-1">
                 <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Notes ({member.gs_ticker.length})
+                  {t.notes} ({member.gs_ticker.length})
                 </div>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
                   {member.gs_ticker.map((note) => (
@@ -290,7 +292,7 @@ export default function StaffPage() {
 
         {staff.length === 0 && (
           <div className="col-span-full text-center py-16 text-muted-foreground">
-            Aucun membre du staff. Ajoutez-en un !
+            {t.noStaff}
           </div>
         )}
       </div>

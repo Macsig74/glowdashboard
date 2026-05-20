@@ -1,0 +1,202 @@
+"use client";
+import React, { createContext, useContext, useState } from "react";
+
+const translations = {
+  en: {
+    // Nav
+    dashboard: "Dashboard",
+    staff: "Staff",
+    servers: "Servers",
+    bbb: "Build by Bit",
+    logout: "Logout",
+    // Dashboard
+    dashboardSubtitle: "GlowStudio overview",
+    staffMembers: "Staff members",
+    totalPlugins: "Total plugins",
+    finishedPlugins: "Finished plugins",
+    welcomeTitle: "Welcome to GlowStudio Dashboard",
+    welcomeText: "Manage your staff, servers and plugins from this centralized dashboard.",
+    // Staff
+    staffSubtitle: (n: number) => `${n} member(s)`,
+    addStaff: "Add staff",
+    addStaffTitle: "Add a staff member",
+    username: "Username",
+    usernamePlaceholder: "Minecraft username",
+    role: "Role",
+    add: "Add",
+    addNote: "Add note",
+    noteFor: (name: string) => `Note for ${name}`,
+    noteContent: "Content",
+    noteContentPlaceholder: "Note content...",
+    good: "Good",
+    bad: "Bad",
+    weight: "Weight (score impact)",
+    saveNote: "Save note",
+    rank: "Rank",
+    changeRank: (name: string) => `Change rank for ${name}`,
+    rankup: "Rank up",
+    derank: "Derank",
+    newRole: "New role",
+    confirm: "Confirm",
+    noStaff: "No staff members. Add one!",
+    notes: "Notes",
+    // Servers
+    serversSubtitle: (n: number) => `${n} server(s)`,
+    addServer: "Add server",
+    addServerTitle: "Add a server",
+    name: "Name",
+    namePlaceholder: "Server name",
+    description: "Description",
+    descriptionPlaceholder: "Description (optional)",
+    create: "Create",
+    todoList: "Todo list",
+    newTask: "New task...",
+    noServers: "No servers. Add one!",
+    // BBB
+    bbbSubtitle: (n: number) => `${n} plugin(s)`,
+    addPlugin: "Add plugin",
+    editPlugin: "Edit plugin",
+    projectName: "Project name",
+    pluginName: "Plugin name",
+    author: "Author",
+    price: "Price (€)",
+    state: "State",
+    status: "Status",
+    licensed: "Licensed",
+    obfuscated: "Obfuscated",
+    save: "Save",
+    noPlugins: "No plugins. Add one!",
+    // States
+    not_started: "Not started",
+    in_progress: "In progress",
+    polishing: "Polishing",
+    review: "Review",
+    finished: "Finished",
+    // Statuses
+    not_ready: "Not ready",
+    ready: "Ready",
+    on_bbb_free: "On BBB Free",
+    on_bbb_paid: "On BBB Paid",
+    free: "Free",
+    // Login
+    loginTitle: "Management dashboard",
+    loginUsername: "Username",
+    loginPassword: "Password",
+    loginButton: "Sign in",
+    loginLoading: "Signing in...",
+    loginError: "Invalid credentials",
+    // Role categories
+    roleStaff: "Staff",
+    roleAdmin: "Admin",
+    roleOther: "Other",
+    rolePartner: "Partner",
+  },
+  fr: {
+    dashboard: "Tableau de bord",
+    staff: "Staff",
+    servers: "Serveurs",
+    bbb: "Build by Bit",
+    logout: "Déconnexion",
+    dashboardSubtitle: "Vue d'ensemble de GlowStudio",
+    staffMembers: "Membres du staff",
+    totalPlugins: "Plugins total",
+    finishedPlugins: "Plugins terminés",
+    welcomeTitle: "Bienvenue sur GlowStudio Dashboard",
+    welcomeText: "Gérez votre staff, vos serveurs et vos plugins depuis ce tableau de bord centralisé.",
+    staffSubtitle: (n: number) => `${n} membre(s)`,
+    addStaff: "Ajouter un staff",
+    addStaffTitle: "Ajouter un membre du staff",
+    username: "Pseudo",
+    usernamePlaceholder: "Pseudo Minecraft",
+    role: "Rôle",
+    add: "Ajouter",
+    addNote: "Ajouter une note",
+    noteFor: (name: string) => `Note pour ${name}`,
+    noteContent: "Contenu",
+    noteContentPlaceholder: "Contenu de la note...",
+    good: "Bien",
+    bad: "Pas bien",
+    weight: "Poids (impact sur le score)",
+    saveNote: "Enregistrer la note",
+    rank: "Rang",
+    changeRank: (name: string) => `Changer le rang de ${name}`,
+    rankup: "Rankup",
+    derank: "Derank",
+    newRole: "Nouveau rôle",
+    confirm: "Confirmer",
+    noStaff: "Aucun membre du staff. Ajoutez-en un !",
+    notes: "Notes",
+    serversSubtitle: (n: number) => `${n} serveur(s)`,
+    addServer: "Ajouter un serveur",
+    addServerTitle: "Ajouter un serveur",
+    name: "Nom",
+    namePlaceholder: "Nom du serveur",
+    description: "Description",
+    descriptionPlaceholder: "Description (optionnel)",
+    create: "Créer",
+    todoList: "Todo list",
+    newTask: "Nouvelle tâche...",
+    noServers: "Aucun serveur. Ajoutez-en un !",
+    bbbSubtitle: (n: number) => `${n} plugin(s)`,
+    addPlugin: "Ajouter un plugin",
+    editPlugin: "Modifier le plugin",
+    projectName: "Nom du projet",
+    pluginName: "Nom du plugin",
+    author: "Auteur",
+    price: "Prix (€)",
+    state: "État",
+    status: "Statut",
+    licensed: "Licencié",
+    obfuscated: "Obfusqué",
+    save: "Sauvegarder",
+    noPlugins: "Aucun plugin. Ajoutez-en un !",
+    not_started: "Pas commencé",
+    in_progress: "En cours",
+    polishing: "Polissage",
+    review: "Review",
+    finished: "Terminé",
+    not_ready: "Pas prêt",
+    ready: "Prêt",
+    on_bbb_free: "Sur BBB Gratuit",
+    on_bbb_paid: "Sur BBB Payant",
+    free: "Gratuit",
+    loginTitle: "Tableau de bord",
+    loginUsername: "Nom d'utilisateur",
+    loginPassword: "Mot de passe",
+    loginButton: "Se connecter",
+    loginLoading: "Connexion...",
+    loginError: "Identifiants incorrects",
+    roleStaff: "Staff",
+    roleAdmin: "Admin",
+    roleOther: "Autre",
+    rolePartner: "Partenaire",
+  },
+} as const;
+
+type Lang = "en" | "fr";
+type T = typeof translations.en;
+
+interface LangContextType {
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  t: T;
+}
+
+const LangContext = createContext<LangContextType>({
+  lang: "en",
+  setLang: () => {},
+  t: translations.en,
+});
+
+export function LangProvider({ children }: { children: React.ReactNode }) {
+  const [lang, setLang] = useState<Lang>("en");
+  return (
+    <LangContext.Provider value={{ lang, setLang, t: translations[lang] }}>
+      {children}
+    </LangContext.Provider>
+  );
+}
+
+export function useLang() {
+  return useContext(LangContext);
+}

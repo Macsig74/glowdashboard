@@ -4,17 +4,19 @@ import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, Server, Package, LogOut, Zap } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  { href: "/", label: "Tableau de bord", icon: LayoutDashboard },
-  { href: "/staff", label: "Staff", icon: Users },
-  { href: "/servers", label: "Serveurs", icon: Server },
-  { href: "/bbb", label: "Build by Bit", icon: Package },
-];
+import { useLang } from "@/lib/i18n";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { t } = useLang();
+
+  const navItems = [
+    { href: "/", label: t.dashboard, icon: LayoutDashboard },
+    { href: "/staff", label: t.staff, icon: Users },
+    { href: "/servers", label: t.servers, icon: Server },
+    { href: "/bbb", label: t.bbb, icon: Package },
+  ];
 
   return (
     <aside className="flex flex-col h-screen w-64 bg-sidebar border-r border-sidebar-border fixed left-0 top-0 z-40">
@@ -59,7 +61,7 @@ export default function Sidebar() {
           className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive w-full transition-colors"
         >
           <LogOut className="w-4 h-4" />
-          Déconnexion
+          {t.logout}
         </button>
       </div>
     </aside>
