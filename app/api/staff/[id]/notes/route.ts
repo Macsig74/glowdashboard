@@ -1,68 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { getDb, uuid, getStaffWithRelations } from "@/lib/db";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const note = await req.json();
+  try {
+    const note = await req.json();
+    const db = getDb();
 
-  const { error: noteError } = await supabase.from("gs_ticker").insert({
-    staff_id: params.id,
-    content: note.content,
-    type: note.type,
-    weight: note.weight,
-    created_by: note.createdBy,
-  });
-  if (noteError) return NextResponse.json({ error: noteError.message }, { status: 500 });
+    db.prepare(
+      "INSERT INTO gs_ticker (id, staff_id, content, type, weight, created_by) VALUES (?, ?, ?, ?, ?, ?)"
+    ).run(uuid(), params.id, note.content, note.type, note.weight, note.createdBy ?? null);
 
-  const { data: member } = await supabase
-    .from("gs_roster")
-    .select("score")
-    .eq("id", params.id)
-    .single();
+    const member = db.prepare("SELECT score FROM gs_roster WHERE id = ?").get(params.id) as { score: number } | undefined;
+    const current = member?.score ?? 0;
+    const delta = note.type === "good" ? note.weight : -note.weight;
+    const newScore = Math.max(0, current + delta);
+    db.prepare("UPDATE gs_roster SET score = ? WHERE id = ?").run(newScore, params.id);
 
-  const current = member?.score ?? 0;
-  const delta = note.type === "good" ? note.weight : -note.weight;
-  const newScore = Math.max(0, current + delta);
-
-  await supabase.from("gs_roster").update({ score: newScore }).eq("id", params.id);
-
-  const { data: updated } = await supabase
-    .from("gs_roster")
-    .select("*, gs_ticker(*), gs_ledger(*)")
-    .eq("id", params.id)
-    .single();
-
-  return NextResponse.json(updated);
+    return NextResponse.json(getStaffWithRelations(params.id));
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const { noteId } = await req.json();
+  try {
+    const { noteId } = await req.json();
+    const db = getDb();
 
-  const { data: note } = await supabase
-    .from("gs_ticker")
-    .select("type, weight")
-    .eq("id", noteId)
-    .single();
+    const note = db.prepare("SELECT type, weight FROM gs_ticker WHERE id = ?").get(noteId) as { type: string; weight: number } | undefined;
+    if (note) {
+      const member = db.prepare("SELECT score FROM gs_roster WHERE id = ?").get(params.id) as { score: number } | undefined;
+      const current = member?.score ?? 0;
+      const delta = note.type === "good" ? -note.weight : note.weight;
+      const newScore = Math.max(0, current + delta);
+      db.prepare("UPDATE gs_roster SET score = ? WHERE id = ?").run(newScore, params.id);
+      db.prepare("DELETE FROM gs_ticker WHERE id = ?").run(noteId);
+    }
 
-  if (note) {
-    const { data: member } = await supabase
-      .from("gs_roster")
-      .select("score")
-      .eq("id", params.id)
-      .single();
-
-    const current = member?.score ?? 0;
-    const delta = note.type === "good" ? -note.weight : note.weight;
-    const newScore = Math.max(0, current + delta);
-
-    await supabase.from("gs_roster").update({ score: newScore }).eq("id", params.id);
-    await supabase.from("gs_ticker").delete().eq("id", noteId);
+    return NextResponse.json(getStaffWithRelations(params.id));
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
   }
-
-  const { data: updated } = await supabase
-    .from("gs_roster")
-    .select("*, gs_ticker(*), gs_ledger(*)")
-    .eq("id", params.id)
-    .single();
-
-  return NextResponse.json(updated);
 }

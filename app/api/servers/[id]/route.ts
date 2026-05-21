@@ -1,21 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { getDb } from "@/lib/db";
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  const { error } = await supabase.from("gs_cluster").delete().eq("id", params.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ success: true });
+  try {
+    getDb().prepare("DELETE FROM gs_cluster WHERE id = ?").run(params.id);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const body = await req.json();
-  const { data, error } = await supabase
-    .from("gs_cluster")
-    .update(body)
-    .eq("id", params.id)
-    .select()
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  try {
+    const body = await req.json();
+    const db = getDb();
+    const fields = Object.keys(body).map((k) => `${k} = ?`).join(", ");
+    db.prepare(`UPDATE gs_cluster SET ${fields} WHERE id = ?`).run(...Object.values(body), params.id);
+    const updated = db.prepare("SELECT * FROM gs_cluster WHERE id = ?").get(params.id);
+    return NextResponse.json(updated);
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }

@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { getDb, uuid } from "@/lib/db";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.isAdmin)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { data, error } = await supabase.from("gs_access").select("*");
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data ?? []);
+  return NextResponse.json(getDb().prepare("SELECT * FROM gs_access").all() ?? []);
 }
 
 export async function POST(req: NextRequest) {
@@ -22,11 +20,11 @@ export async function POST(req: NextRequest) {
   if (!username || !salon)
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
-  const { error } = await supabase
-    .from("gs_access")
-    .upsert({ username, salon }, { onConflict: "username,salon" });
+  const db = getDb();
+  const existing = db.prepare("SELECT id FROM gs_access WHERE username = ? AND salon = ?").get(username, salon);
+  if (!existing)
+    db.prepare("INSERT INTO gs_access (id, username, salon) VALUES (?, ?, ?)").run(uuid(), username, salon);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }
 
@@ -39,12 +37,6 @@ export async function DELETE(req: NextRequest) {
   if (!username || !salon)
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
-  const { error } = await supabase
-    .from("gs_access")
-    .delete()
-    .eq("username", username)
-    .eq("salon", salon);
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  getDb().prepare("DELETE FROM gs_access WHERE username = ? AND salon = ?").run(username, salon);
   return NextResponse.json({ success: true });
 }

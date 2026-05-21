@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { getDb, uuid } from "@/lib/db";
 
-// POST — add a message to a ticket (admin only)
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -16,21 +15,13 @@ export async function POST(
   if (!message?.trim())
     return NextResponse.json({ error: "Message vide" }, { status: 400 });
 
-  const { error } = await supabase.from("gs_ticket_messages").insert({
-    ticket_id: params.id,
-    sender: session.user.name ?? "Admin",
-    message: message.trim(),
-    is_admin: true,
-  });
+  const db = getDb();
+  db.prepare("INSERT INTO gs_ticket_messages (id, ticket_id, sender, message, is_admin) VALUES (?, ?, ?, ?, 1)").run(
+    uuid(), params.id, session.user.name ?? "Admin", message.trim()
+  );
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  // Auto set status to in_progress if still open
-  await supabase
-    .from("gs_tickets")
-    .update({ status: "in_progress" })
-    .eq("id", params.id)
-    .eq("status", "open");
+  // Auto set in_progress if still open
+  db.prepare("UPDATE gs_tickets SET status = 'in_progress' WHERE id = ? AND status = 'open'").run(params.id);
 
   return NextResponse.json({ success: true });
 }

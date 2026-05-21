@@ -1,42 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { getDb, uuid, normalizePlugin } from "@/lib/db";
 
 export async function GET() {
-  const { data, error } = await supabase
-    .from("gs_forge")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  const db = getDb();
+  const data = db.prepare("SELECT * FROM gs_forge ORDER BY created_at DESC").all() as Record<string, unknown>[];
+  return NextResponse.json(data.map(normalizePlugin));
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { data, error } = await supabase
-      .from("gs_forge")
-      .insert({
-        name: body.name,
-        plugin_name: body.pluginName,
-        description: body.description,
-        author: body.author,
-        price: body.price,
-        state: body.state,
-        licensed: body.licensed,
-        obfuscated: body.obfuscated,
-        status: body.status,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return NextResponse.json(normalizePlugin(data), { status: 201 });
+    const db = getDb();
+    const id = uuid();
+    db.prepare(
+      "INSERT INTO gs_forge (id, name, plugin_name, description, author, price, state, licensed, obfuscated, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(id, body.name, body.pluginName, body.description ?? null, body.author ?? null, body.price ?? 0, body.state ?? "not_started", body.licensed ? 1 : 0, body.obfuscated ? 1 : 0, body.status ?? "not_ready");
+    const row = db.prepare("SELECT * FROM gs_forge WHERE id = ?").get(id) as Record<string, unknown>;
+    return NextResponse.json(normalizePlugin(row), { status: 201 });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
-}
-
-function normalizePlugin(p: Record<string, unknown>) {
-  return { ...p, pluginName: p.plugin_name };
 }

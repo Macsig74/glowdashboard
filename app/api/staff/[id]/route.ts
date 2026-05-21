@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { getDb, getStaffWithRelations } from "@/lib/db";
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  const { error } = await supabase.from("gs_roster").delete().eq("id", params.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ success: true });
+  try {
+    getDb().prepare("DELETE FROM gs_roster WHERE id = ?").run(params.id);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const body = await req.json();
-  const { data, error } = await supabase
-    .from("gs_roster")
-    .update(body)
-    .eq("id", params.id)
-    .select()
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  try {
+    const body = await req.json();
+    const db = getDb();
+    const fields = Object.keys(body).map((k) => `${k} = ?`).join(", ");
+    db.prepare(`UPDATE gs_roster SET ${fields} WHERE id = ?`).run(...Object.values(body), params.id);
+    return NextResponse.json(getStaffWithRelations(params.id));
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }

@@ -1,7 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { supabase } from "./supabase";
+import { getDb } from "./db";
 import { isAdmin } from "./admins";
 
 export const authOptions: NextAuthOptions = {
@@ -15,11 +15,10 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null;
 
-        const { data: user } = await supabase
-          .from("gs_phantom")
-          .select("*")
-          .eq("username", credentials.username)
-          .single();
+        const db = getDb();
+        const user = db
+          .prepare("SELECT * FROM gs_phantom WHERE username = ?")
+          .get(credentials.username) as { id: string; username: string; password: string } | undefined;
 
         if (!user) return null;
 

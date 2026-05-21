@@ -1,42 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { getDb, uuid } from "@/lib/db";
 
-// GET — list all tickets (admin only)
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.isAdmin)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { data, error } = await supabase
-    .from("gs_tickets")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data ?? []);
+  return NextResponse.json(getDb().prepare("SELECT * FROM gs_tickets ORDER BY created_at DESC").all() ?? []);
 }
 
-// POST — create a ticket (public, no auth required)
 export async function POST(req: NextRequest) {
   const { username, subject, message } = await req.json();
   if (!username || !subject || !message)
     return NextResponse.json({ error: "Champs manquants" }, { status: 400 });
 
-  const { data: ticket, error: ticketError } = await supabase
-    .from("gs_tickets")
-    .insert({ username, subject, status: "open" })
-    .select()
-    .single();
+  const db = getDb();
+  const ticketId = uuid();
+  db.prepare("INSERT INTO gs_tickets (id, username, subject, status) VALUES (?, ?, ?, 'open')").run(ticketId, username, subject);
+  db.prepare("INSERT INTO gs_ticket_messages (id, ticket_id, sender, message, is_admin) VALUES (?, ?, ?, ?, 0)").run(uuid(), ticketId, username, message);
 
-  if (ticketError) return NextResponse.json({ error: ticketError.message }, { status: 500 });
-
-  const { error: msgError } = await supabase
-    .from("gs_ticket_messages")
-    .insert({ ticket_id: ticket.id, sender: username, message, is_admin: false });
-
-  if (msgError) return NextResponse.json({ error: msgError.message }, { status: 500 });
-
-  return NextResponse.json({ id: ticket.id });
+  return NextResponse.json({ id: ticketId });
 }

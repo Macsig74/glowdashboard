@@ -1,31 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { getDb, normalizePlugin } from "@/lib/db";
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const body = await req.json();
-  const { data, error } = await supabase
-    .from("gs_forge")
-    .update({
-      name: body.name,
-      plugin_name: body.pluginName,
-      description: body.description,
-      author: body.author,
-      price: body.price,
-      state: body.state,
-      licensed: body.licensed,
-      obfuscated: body.obfuscated,
-      status: body.status,
-    })
-    .eq("id", params.id)
-    .select()
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ...data, pluginName: data.plugin_name });
+  try {
+    const body = await req.json();
+    const db = getDb();
+    db.prepare(
+      "UPDATE gs_forge SET name=?, plugin_name=?, description=?, author=?, price=?, state=?, licensed=?, obfuscated=?, status=? WHERE id=?"
+    ).run(body.name, body.pluginName, body.description ?? null, body.author ?? null, body.price ?? 0, body.state, body.licensed ? 1 : 0, body.obfuscated ? 1 : 0, body.status, params.id);
+    const row = db.prepare("SELECT * FROM gs_forge WHERE id = ?").get(params.id) as Record<string, unknown>;
+    return NextResponse.json(normalizePlugin(row));
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  const { error } = await supabase.from("gs_forge").delete().eq("id", params.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ success: true });
+  try {
+    getDb().prepare("DELETE FROM gs_forge WHERE id = ?").run(params.id);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }

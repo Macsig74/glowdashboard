@@ -1,30 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { getDb, uuid, getStaffWithRelations } from "@/lib/db";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { action, newRole } = await req.json();
+  try {
+    const { action, newRole } = await req.json();
+    const db = getDb();
 
-  const { data: member } = await supabase
-    .from("gs_roster")
-    .select("role")
-    .eq("id", params.id)
-    .single();
+    const member = db.prepare("SELECT role FROM gs_roster WHERE id = ?").get(params.id) as { role: string } | undefined;
+    if (!member) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (!member) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    db.prepare("INSERT INTO gs_ledger (id, staff_id, action, old_role) VALUES (?, ?, ?, ?)").run(uuid(), params.id, action, member.role);
+    db.prepare("UPDATE gs_roster SET role = ? WHERE id = ?").run(newRole, params.id);
 
-  await supabase.from("gs_ledger").insert({
-    staff_id: params.id,
-    action,
-    old_role: member.role,
-  });
-
-  await supabase.from("gs_roster").update({ role: newRole }).eq("id", params.id);
-
-  const { data: updated } = await supabase
-    .from("gs_roster")
-    .select("*, gs_ticker(*), gs_ledger(*)")
-    .eq("id", params.id)
-    .single();
-
-  return NextResponse.json(updated);
+    return NextResponse.json(getStaffWithRelations(params.id));
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }

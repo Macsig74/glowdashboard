@@ -1,34 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { getDb } from "@/lib/db";
 
-// GET — get ticket + messages (public by ticket ID)
 export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { data: ticket, error: ticketError } = await supabase
-    .from("gs_tickets")
-    .select("*")
-    .eq("id", params.id)
-    .single();
+  const db = getDb();
+  const ticket = db.prepare("SELECT * FROM gs_tickets WHERE id = ?").get(params.id);
+  if (!ticket) return NextResponse.json({ error: "Ticket introuvable" }, { status: 404 });
 
-  if (ticketError || !ticket)
-    return NextResponse.json({ error: "Ticket introuvable" }, { status: 404 });
-
-  const { data: messages, error: msgError } = await supabase
-    .from("gs_ticket_messages")
-    .select("*")
-    .eq("ticket_id", params.id)
-    .order("created_at", { ascending: true });
-
-  if (msgError) return NextResponse.json({ error: msgError.message }, { status: 500 });
-
-  return NextResponse.json({ ...ticket, messages: messages ?? [] });
+  const messages = db.prepare("SELECT * FROM gs_ticket_messages WHERE ticket_id = ? ORDER BY created_at ASC").all(params.id) as Record<string, unknown>[];
+  const shaped = messages.map((m) => ({ ...m, is_admin: Boolean(m.is_admin) }));
+  return NextResponse.json({ ...ticket, messages: shaped });
 }
 
-// PATCH — update ticket status (admin only)
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -41,11 +28,6 @@ export async function PATCH(
   if (!["open", "in_progress", "closed"].includes(status))
     return NextResponse.json({ error: "Statut invalide" }, { status: 400 });
 
-  const { error } = await supabase
-    .from("gs_tickets")
-    .update({ status })
-    .eq("id", params.id);
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  getDb().prepare("UPDATE gs_tickets SET status = ? WHERE id = ?").run(status, params.id);
   return NextResponse.json({ success: true });
 }

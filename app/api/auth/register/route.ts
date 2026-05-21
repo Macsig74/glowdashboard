@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { supabase } from "@/lib/supabase";
+import { getDb, uuid } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,18 +8,13 @@ export async function POST(req: NextRequest) {
     if (!username || !password)
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
-    const { data: existing } = await supabase
-      .from("gs_phantom")
-      .select("id")
-      .eq("username", username)
-      .single();
-
+    const db = getDb();
+    const existing = db.prepare("SELECT id FROM gs_phantom WHERE username = ?").get(username);
     if (existing)
       return NextResponse.json({ error: "User already exists" }, { status: 409 });
 
     const hashed = await bcrypt.hash(password, 10);
-    const { error } = await supabase.from("gs_phantom").insert({ username, password: hashed });
-    if (error) throw error;
+    db.prepare("INSERT INTO gs_phantom (id, username, password) VALUES (?, ?, ?)").run(uuid(), username, hashed);
 
     return NextResponse.json({ success: true });
   } catch (err) {
