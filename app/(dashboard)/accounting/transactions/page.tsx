@@ -112,6 +112,17 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     load();
+
+    const onFocus = () => load();
+    const onVisibility = () => { if (document.visibilityState === "visible") load(); };
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, []);
 
   function resetForm() {
@@ -182,9 +193,7 @@ export default function TransactionsPage() {
     setExpandedDocs(txId);
     if (docsCache[txId]) return;
     try {
-      const res = await fetch(`/api/accounting/transactions/${txId}/docs`, {
-        method: "POST",
-      });
+      const res = await fetch(`/api/accounting/transactions/${txId}/docs`);
       const data = await res.json();
       setDocsCache((prev) => ({ ...prev, [txId]: Array.isArray(data) ? data : [] }));
     } catch (e) {

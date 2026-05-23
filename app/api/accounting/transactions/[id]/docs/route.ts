@@ -8,12 +8,19 @@ export async function GET(
   try {
     const { searchParams } = new URL(req.url);
     const docId = searchParams.get("docId");
+    const db = getDb();
 
+    // Without docId → list all docs for this transaction
     if (!docId) {
-      return NextResponse.json({ error: "docId query param required" }, { status: 400 });
+      const docs = db
+        .prepare(
+          "SELECT id, filename, mime_type, created_at FROM gs_transaction_docs WHERE transaction_id = ? ORDER BY created_at ASC"
+        )
+        .all(params.id);
+      return NextResponse.json(docs);
     }
 
-    const db = getDb();
+    // With docId → download the specific document
     const doc = db
       .prepare(
         "SELECT * FROM gs_transaction_docs WHERE id = ? AND transaction_id = ?"
@@ -36,24 +43,6 @@ export async function GET(
     });
   } catch (err) {
     console.error("[accounting/transactions/docs GET]", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
-
-export async function POST(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const db = getDb();
-    const docs = db
-      .prepare(
-        "SELECT id, filename, mime_type, created_at FROM gs_transaction_docs WHERE transaction_id = ? ORDER BY created_at ASC"
-      )
-      .all(params.id);
-    return NextResponse.json(docs);
-  } catch (err) {
-    console.error("[accounting/transactions/docs POST]", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
