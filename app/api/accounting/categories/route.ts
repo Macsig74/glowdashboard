@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { getDb, uuid } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const db = getDb();
     const rows = db.prepare("SELECT * FROM gs_acc_categories ORDER BY created_at ASC").all();
@@ -15,6 +20,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   try {
     const body = await req.json();
     const { name, emoji } = body ?? {};

@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { getDb, uuid } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+const ALLOWED_MIME_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const db = getDb();
     const rows = db
@@ -26,6 +34,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const formData = await req.formData();
 
@@ -74,13 +85,19 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < maxFiles; i++) {
       const file = files[i];
       if (!file || file.size === 0) continue;
+      if (file.size > MAX_FILE_SIZE) {
+        return NextResponse.json({ error: `Fichier trop volumineux (max 5 Mo) : ${file.name}` }, { status: 400 });
+      }
+      if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+        return NextResponse.json({ error: `Type de fichier non autorisé : ${file.type}` }, { status: 400 });
+      }
       const buffer = await file.arrayBuffer();
       const base64 = Buffer.from(buffer).toString("base64");
       const docId = uuid();
       db.prepare(
         `INSERT INTO gs_transaction_docs (id, transaction_id, filename, mime_type, data)
          VALUES (?, ?, ?, ?, ?)`
-      ).run(docId, id, file.name, file.type || "application/octet-stream", base64);
+      ).run(docId, id, file.name, file.type, base64);
     }
 
     const row = db
