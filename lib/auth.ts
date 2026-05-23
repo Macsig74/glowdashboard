@@ -37,7 +37,7 @@ export const authOptions: NextAuthOptions = {
         httpOnly: true,
         sameSite: "lax" as const,
         path: "/",
-        secure: process.env.NODE_ENV === "production",
+        secure: process.env.NEXTAUTH_URL?.startsWith("https") ?? false,
         maxAge: 30 * 24 * 60 * 60,
       },
     },
