@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Server, Package, LogOut, Zap, Shield, Globe, Ticket } from "lucide-react";
+import { LayoutDashboard, Users, Server, Package, LogOut, Zap, Shield, Globe, Ticket, Calculator } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { useLang } from "@/lib/i18n";
@@ -13,6 +13,7 @@ const ALL_NAV_ITEMS = [
   { href: "/servers", label: "servers" as const, icon: Server, salon: "servers" },
   { href: "/bbb", label: "bbb" as const, icon: Package, salon: "bbb" },
   { href: "/tickets", label: "tickets" as const, icon: Ticket, salon: null },
+  { href: "/accounting", label: "accounting" as const, icon: Calculator, salon: null },
 ];
 
 export default function Sidebar() {

@@ -117,6 +117,33 @@ function initSchema(db: Database.Database) {
       server_id TEXT NOT NULL REFERENCES gs_cluster(id) ON DELETE CASCADE,
       UNIQUE(username, server_id)
     );
+
+    CREATE TABLE IF NOT EXISTS gs_acc_categories (
+      id         TEXT PRIMARY KEY,
+      name       TEXT NOT NULL,
+      emoji      TEXT NOT NULL DEFAULT '📁',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS gs_transactions (
+      id          TEXT PRIMARY KEY,
+      label       TEXT NOT NULL,
+      amount      REAL NOT NULL,
+      type        TEXT NOT NULL CHECK(type IN ('income','expense')),
+      category_id TEXT REFERENCES gs_acc_categories(id) ON DELETE SET NULL,
+      date        TEXT NOT NULL,
+      notes       TEXT,
+      created_at  TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS gs_transaction_docs (
+      id             TEXT PRIMARY KEY,
+      transaction_id TEXT NOT NULL REFERENCES gs_transactions(id) ON DELETE CASCADE,
+      filename       TEXT NOT NULL,
+      mime_type      TEXT NOT NULL DEFAULT 'application/octet-stream',
+      data           TEXT NOT NULL,
+      created_at     TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   runMigrations(db);
