@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 function getLastTwelveMonths(): { key: string; label: string }[] {
   const months: { key: string; label: string }[] = [];
   const now = new Date();
@@ -76,14 +78,10 @@ export async function GET() {
       .prepare("SELECT COUNT(*) AS cnt FROM gs_transactions")
       .get() as { cnt: number };
 
-    return NextResponse.json({
-      balance,
-      totalIncome,
-      totalExpense,
-      transactionCount: countRow?.cnt ?? 0,
-      monthly,
-      byCategory,
-    });
+    return NextResponse.json(
+      { balance, totalIncome, totalExpense, transactionCount: countRow?.cnt ?? 0, monthly, byCategory },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (err) {
     console.error("[accounting/dashboard GET]", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

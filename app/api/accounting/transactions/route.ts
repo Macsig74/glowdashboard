@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, uuid } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const db = getDb();
@@ -16,7 +18,7 @@ export async function GET() {
          ORDER BY t.date DESC, t.created_at DESC`
       )
       .all();
-    return NextResponse.json(rows);
+    return NextResponse.json(rows, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
     console.error("[accounting/transactions GET]", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

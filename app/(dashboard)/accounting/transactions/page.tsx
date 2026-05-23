@@ -97,8 +97,8 @@ export default function TransactionsPage() {
   async function load() {
     try {
       const [txRes, catRes] = await Promise.all([
-        fetch("/api/accounting/transactions"),
-        fetch("/api/accounting/categories"),
+        fetch("/api/accounting/transactions", { cache: "no-store" }),
+        fetch("/api/accounting/categories", { cache: "no-store" }),
       ]);
       const [txData, catData] = await Promise.all([txRes.json(), catRes.json()]);
       setTransactions(Array.isArray(txData) ? txData : []);

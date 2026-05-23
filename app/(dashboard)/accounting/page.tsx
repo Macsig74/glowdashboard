@@ -52,7 +52,7 @@ export default function AccountingDashboardPage() {
 
   const fetchData = () => {
     setLoading(true);
-    fetch("/api/accounting/dashboard")
+    fetch("/api/accounting/dashboard", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => setData(d))
       .catch(console.error)
