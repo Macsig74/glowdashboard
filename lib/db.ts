@@ -110,7 +110,32 @@ function initSchema(db: Database.Database) {
       is_admin   INTEGER NOT NULL DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS gs_server_perms (
+      id        TEXT PRIMARY KEY,
+      username  TEXT NOT NULL,
+      server_id TEXT NOT NULL REFERENCES gs_cluster(id) ON DELETE CASCADE,
+      UNIQUE(username, server_id)
+    );
   `);
+
+  runMigrations(db);
+}
+
+function runMigrations(db: Database.Database) {
+  const migrations: { sql: string }[] = [
+    { sql: "ALTER TABLE gs_tickets ADD COLUMN email TEXT" },
+    { sql: "ALTER TABLE gs_tickets ADD COLUMN access_code TEXT" },
+    { sql: "ALTER TABLE gs_tickets ADD COLUMN code_expires_at TEXT" },
+  ];
+
+  for (const m of migrations) {
+    try {
+      db.exec(m.sql);
+    } catch {
+      // Column already exists — ignore
+    }
+  }
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -145,6 +170,22 @@ export function getServerWithItems(id: string) {
 export function getAllServers() {
   const db = getDb();
   const servers = db.prepare("SELECT * FROM gs_cluster ORDER BY created_at DESC").all() as Record<string, unknown>[];
+  return servers.map((s) => {
+    const items = db.prepare("SELECT * FROM gs_items WHERE server_id = ? ORDER BY created_at ASC").all(s.id as string);
+    return { ...s, gs_items: items };
+  });
+}
+
+export function getServersForUser(username: string) {
+  const db = getDb();
+  const servers = db
+    .prepare(
+      `SELECT gs_cluster.* FROM gs_cluster
+       INNER JOIN gs_server_perms ON gs_server_perms.server_id = gs_cluster.id
+       WHERE gs_server_perms.username = ?
+       ORDER BY gs_cluster.created_at DESC`
+    )
+    .all(username) as Record<string, unknown>[];
   return servers.map((s) => {
     const items = db.prepare("SELECT * FROM gs_items WHERE server_id = ? ORDER BY created_at ASC").all(s.id as string);
     return { ...s, gs_items: items };

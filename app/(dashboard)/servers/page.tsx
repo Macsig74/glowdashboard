@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLang } from "@/lib/i18n";
+import { useSession } from "next-auth/react";
 
 type Priority = "low" | "medium" | "high";
 
@@ -44,6 +45,8 @@ const emptyTask = { text: "", description: "", priority: "medium" as Priority, d
 
 export default function ServersPage() {
   const { t } = useLang();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.isAdmin ?? false;
   const [servers, setServers] = useState<ServerInstance[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [addOpen, setAddOpen] = useState(false);
@@ -124,6 +127,7 @@ export default function ServersPage() {
           <h1 className="text-2xl font-bold text-foreground">{t.servers}</h1>
           <p className="text-muted-foreground mt-1">{t.serversSubtitle(servers.length)}</p>
         </div>
+        {isAdmin && (
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
             <Button><Plus className="w-4 h-4" />{t.addServer}</Button>
@@ -143,6 +147,7 @@ export default function ServersPage() {
             </div>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -159,9 +164,11 @@ export default function ServersPage() {
                   <h3 className="font-semibold text-foreground text-lg">{server.name}</h3>
                   {server.description && <p className="text-sm text-muted-foreground mt-0.5">{server.description}</p>}
                 </div>
-                <button onClick={() => deleteServer(server.id)} className="text-muted-foreground hover:text-destructive transition-colors">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {isAdmin && (
+                  <button onClick={() => deleteServer(server.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
               {total > 0 && (

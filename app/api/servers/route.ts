@@ -1,11 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb, uuid, getAllServers } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { getDb, uuid, getAllServers, getServersForUser } from "@/lib/db";
 
 export async function GET() {
-  return NextResponse.json(getAllServers());
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (session.user.isAdmin) {
+    return NextResponse.json(getAllServers());
+  }
+
+  const username = session.user.name ?? "";
+  return NextResponse.json(getServersForUser(username));
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.isAdmin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const { name, description } = await req.json();
     const db = getDb();
