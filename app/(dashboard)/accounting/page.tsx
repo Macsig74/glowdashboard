@@ -14,6 +14,8 @@ import {
   YAxis,
   ResponsiveContainer,
 } from "recharts";
+import { RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface DashboardData {
   balance: number;
@@ -48,21 +50,49 @@ export default function AccountingDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchData = () => {
+    setLoading(true);
     fetch("/api/accounting/dashboard")
       .then((r) => r.json())
       .then((d) => setData(d))
       .catch(console.error)
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchData();
+
+    const onFocus = () => fetchData();
+    const onVisibility = () => { if (document.visibilityState === "visible") fetchData(); };
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, []);
 
   const isPositive = (data?.balance ?? 0) >= 0;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{t.accounting}</h1>
-        <p className="text-muted-foreground text-sm mt-1">{t.accountingSubtitle}</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">{t.accounting}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{t.accountingSubtitle}</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={fetchData}
+          disabled={loading}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          Actualiser
+        </Button>
       </div>
 
       <AccountingNav />
